@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Изменили заголовок вкладки -->
     <title>График отключений</title>
     <style>
         :root {
@@ -94,7 +93,7 @@
         .timer-red { color: var(--warn); }
         .timer-green { color: var(--ok); }
 
-        .day-title { font-weight: 600; margin-bottom: 8px; }
+        .day-title { font-weight: 600; margin-bottom: 8px; margin-top: 12px;}
 
         .slots { display: grid; gap: 6px; }
         .slot {
@@ -125,6 +124,32 @@
         .type-actual { color: var(--warn); background: rgba(255,69,58,0.1); }
         .type-planned { color: var(--primary); background: rgba(10,132,255,0.1); }
 
+        /* Переключатель дней */
+        .day-switcher {
+            display: flex;
+            background: rgba(118, 118, 128, 0.12);
+            padding: 2px;
+            border-radius: 9px;
+            margin-bottom: 12px;
+        }
+        .day-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 6px 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: inherit;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .day-btn.active {
+            background: var(--card);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+            font-weight: 600;
+        }
+
         .header-row {
             display: flex;
             justify-content: space-between;
@@ -133,7 +158,6 @@
         }
         .hidden { display: none; }
         
-        /* Скрываем лог для продакшена, но оставляем стили на случай отладки */
         #debugConsole {
             display: none; 
             margin-top: 30px;
@@ -178,7 +202,6 @@
             <div class="status on" id="statusTitle">Статус неизвестен</div>
             <div class="sub" id="statusSub">Выберите группу для отображения</div>
             
-            <!-- Единый счетчик -->
             <div class="timer-container hidden" id="timerContainer">
                 <div id="timerLabel" class="timer-label">...</div>
                 <div id="timerValue" class="timer-value">--:--</div>
@@ -187,6 +210,13 @@
 
         <div class="card">
             <div id="scheduleTypeBadge" class="schedule-type type-planned">Плановый график</div>
+            
+            <!-- Переключатель дней -->
+            <div class="day-switcher">
+                <button class="day-btn active" id="btnToday">Сегодня</button>
+                <button class="day-btn" id="btnTomorrow">Завтра</button>
+            </div>
+
             <div class="day-title" id="scheduleDate">Сегодня</div>
             <div class="slots" id="slotsContainer"></div>
         </div>
@@ -221,6 +251,9 @@
             schedule: {},
             isActual: {} 
         };
+        
+        // Текущий выбранный день (0 - сегодня, 1 - завтра)
+        let SELECTED_DAY_OFFSET = 0;
 
         const CityNames = {
             'kiev': 'Киев',
@@ -238,7 +271,7 @@
             if (type === 'data') line.className = 'log-data';
             consoleDiv.appendChild(line);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
-            console.log(msg); // Оставляем вывод в консоль браузера (F12)
+            console.log(msg);
         }
 
         function findDeepKey(obj, keyToFind) {
@@ -344,6 +377,10 @@
         const timerLabel = document.getElementById('timerLabel');
         const timerValue = document.getElementById('timerValue');
 
+        // Кнопки переключения дней
+        const btnToday = document.getElementById('btnToday');
+        const btnTomorrow = document.getElementById('btnTomorrow');
+
         async function init() {
             const cities = await loadCities();
             citySelect.innerHTML = '<option value="" disabled selected>Выберите город</option>';
@@ -421,6 +458,25 @@
             placeholderDiv.classList.add('hidden');
         }
 
+        // Обработчики смены дня
+        btnToday.addEventListener('click', () => {
+            if (SELECTED_DAY_OFFSET !== 0) {
+                SELECTED_DAY_OFFSET = 0;
+                btnToday.classList.add('active');
+                btnTomorrow.classList.remove('active');
+                onGroupChange(); // Перерисовка
+            }
+        });
+
+        btnTomorrow.addEventListener('click', () => {
+            if (SELECTED_DAY_OFFSET !== 1) {
+                SELECTED_DAY_OFFSET = 1;
+                btnTomorrow.classList.add('active');
+                btnToday.classList.remove('active');
+                onGroupChange(); // Перерисовка
+            }
+        });
+
         citySelect.addEventListener('change', () => {
             localStorage.setItem('selectedCity', citySelect.value);
             onCityChange(true);
@@ -452,7 +508,6 @@
             groupSelect.disabled = false;
         }
 
-        // === НОРМАЛИЗАЦИЯ ГРАФИКА ===
         function normalizeSchedule(rawSlots) {
             if (!rawSlots || !Array.isArray(rawSlots)) return [];
             
@@ -494,8 +549,12 @@
 
         function renderSchedule(rawSchedule, isActual) {
             const today = new Date();
+            // Расчет даты для отображения
+            const viewDate = new Date(today);
+            viewDate.setDate(today.getDate() + SELECTED_DAY_OFFSET);
+            
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
-            document.getElementById('scheduleDate').textContent = today.toLocaleDateString('ru-RU', options);
+            document.getElementById('scheduleDate').textContent = viewDate.toLocaleDateString('ru-RU', options);
             slotsContainer.innerHTML = '';
 
             if (isActual) {
@@ -513,37 +572,60 @@
                 return;
             }
 
-            let dayRaw = [];
+            // Данные для таймера (всегда нужны на сегодня и завтра, независимо от того, что смотрим)
+            let todayRaw = [];
             let tomorrowRaw = [];
             
+            // Данные для отображения списка
+            let viewRaw = [];
+
             if (isActual || rawSchedule.length <= 3) {
-                dayRaw = rawSchedule[0];
-                if (rawSchedule.length > 1) tomorrowRaw = rawSchedule[1];
+                // Структура dailySchedule: [0]=Сегодня, [1]=Завтра
+                todayRaw = rawSchedule[0] || [];
+                tomorrowRaw = rawSchedule[1] || [];
+                
+                // Выбираем что показывать в списке
+                viewRaw = SELECTED_DAY_OFFSET === 0 ? todayRaw : tomorrowRaw;
             } else {
+                // Структура weekly: 0=Пн...6=Вс
                 const jsDay = today.getDay(); 
-                const arrayIndex = (jsDay === 0) ? 6 : jsDay - 1;
-                const nextIndex = (arrayIndex + 1) % 7;
-                dayRaw = rawSchedule[arrayIndex];
-                tomorrowRaw = rawSchedule[nextIndex];
+                const todayIndex = (jsDay === 0) ? 6 : jsDay - 1;
+                const nextIndex = (todayIndex + 1) % 7;
+                
+                todayRaw = rawSchedule[todayIndex] || [];
+                tomorrowRaw = rawSchedule[nextIndex] || [];
+                
+                // Для отображения списка берем день со сдвигом
+                // Если сегодня Вс (0 -> 6), завтра Пн (0)
+                const viewIndex = (todayIndex + SELECTED_DAY_OFFSET) % 7;
+                viewRaw = rawSchedule[viewIndex] || [];
             }
 
-            // !!! ВАЖНО: Нормализуем графики (заполняем пробелы)
-            const daySchedule = normalizeSchedule(dayRaw);
-            const tomorrowSchedule = normalizeSchedule(tomorrowRaw);
-
+            // Рендерим список для ВЫБРАННОГО дня
+            const viewSchedule = normalizeSchedule(viewRaw);
             const currentHour = today.getHours() + today.getMinutes() / 60;
 
-            if (daySchedule.length === 0) {
-                slotsContainer.innerHTML = '<div class="sub">Данных на сегодня нет</div>';
-                updateStatusHeader(null);
-                timerContainer.classList.add('hidden');
-                return;
+            if (viewSchedule.length === 0) {
+                slotsContainer.innerHTML = '<div class="sub">На этот день данных нет</div>';
+            } else {
+                dayScheduleRender(viewSchedule, currentHour);
             }
 
-            updateStatusHeader(daySchedule, currentHour);
-            updateCountdown(daySchedule, tomorrowSchedule, currentHour);
+            // ОБНОВЛЯЕМ ТАЙМЕР И СТАТУС (ВСЕГДА ПО ТЕКУЩЕМУ ВРЕМЕНИ СЕГОДНЯ)
+            const todayNorm = normalizeSchedule(todayRaw);
+            const tomorrowNorm = normalizeSchedule(tomorrowRaw);
+            
+            if (todayNorm.length > 0) {
+                updateStatusHeader(todayNorm, currentHour);
+                updateCountdown(todayNorm, tomorrowNorm, currentHour);
+            } else {
+                updateStatusHeader(null);
+                timerContainer.classList.add('hidden');
+            }
+        }
 
-            daySchedule.forEach(slot => {
+        function dayScheduleRender(schedule, currentHour) {
+            schedule.forEach(slot => {
                 const div = document.createElement('div');
                 let className = 'slot';
                 let typeText = '';
@@ -559,7 +641,8 @@
                     typeText = 'Свет есть';
                 }
 
-                if (currentHour >= slot.start && currentHour < slot.end) {
+                // Подсветка текущего времени ТОЛЬКО если смотрим СЕГОДНЯ
+                if (SELECTED_DAY_OFFSET === 0 && currentHour >= slot.start && currentHour < slot.end) {
                     className += ' is-now';
                 }
 
@@ -572,7 +655,6 @@
             });
         }
 
-        // === ОБНОВЛЕННАЯ ЛОГИКА ТАЙМЕРА (ЕДИНЫЙ СЧЕТЧИК) ===
         function updateCountdown(todaySlots, tomorrowSlots, currentHour) {
             timerContainer.classList.remove('hidden');
             const currentSlot = todaySlots.find(s => currentHour >= s.start && currentHour < s.end);
