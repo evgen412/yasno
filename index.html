@@ -175,6 +175,7 @@ function fmt(v){
       title.textContent = city+' — группа '+group.replace('group_','');
 
       const slots = gData[0] || [];
+      // POSSIBLE_OUTAGE = возможное отключение, а не гарантированное
       const outages = slots.filter(s=>s.type==='POSSIBLE_OUTAGE');
 
       let current=null, next=null;
@@ -189,17 +190,17 @@ function fmt(v){
       const card=document.createElement('div'); card.className='card';
       const st=document.createElement('div');
       st.className='status '+(current?'off':'on');
-      st.textContent=current?'⚡ Отключение сейчас':'💡 Свет есть';
+      st.textContent = current ? '⚠️ Возможное отключение сейчас' : '💡 Свет есть';
       card.appendChild(st);
 
       const sub=document.createElement('div'); sub.className='sub';
       if(current){
         const m=Math.floor((hoursToDate(current.end,now)-now)/60000);
-        sub.textContent='До включения: '+m+' мин';
+        sub.textContent = 'До возможного включения: ' + m + ' мин';
       } else if(next){
         const m=Math.floor((hoursToDate(next.start,now)-now)/60000);
         sub.classList.add('warn');
-        sub.textContent='До отключения: '+m+' мин';
+        sub.textContent = 'До возможного отключения: ' + m + ' мин';
       } else sub.textContent='Отключений больше нет';
       card.appendChild(sub);
       out.appendChild(card);
