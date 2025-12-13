@@ -147,7 +147,9 @@ function fmt(v){
     const comp = json.components?.find(c=>c.template_name==='electricity-outages-daily-schedule');
     if(!comp) throw new Error('component not found');
 
-    // dailySchedule может быть либо объектом, либо строкой JSON
+    // ФАКТИЧЕСКИЙ график (как на сайте)
+    if(!comp.dailySchedule) throw new Error('dailySchedule missing');
+
     const daily = typeof comp.dailySchedule === 'string'
       ? JSON.parse(comp.dailySchedule)
       : comp.dailySchedule;
@@ -164,7 +166,8 @@ function fmt(v){
 
     function render(){
       const now = kyivNow();
-      const cityData = daily?.[city]?.groups || daily?.[city];
+      const cityData = daily?.[city]?.groups;
+      if(!cityData) throw new Error('city not found');
       if(!cityData) return;
 
       groupSel.innerHTML='';
@@ -178,11 +181,8 @@ function fmt(v){
       const gData = cityData?.[group];
       title.textContent = city+' — группа '+group.replace('group_','');
 
-      const today = Array.isArray(gData?.today)
-        ? gData.today
-        : Array.isArray(gData)
-          ? gData[0] || []
-          : [];
+      if(!gData || !Array.isArray(gData.today)) throw new Error('today missing');
+      const today = gData.today;
       const tomorrow = gData?.tomorrow || [];
       const slots = today;
       const outages = slots.filter(s=>s.type==='DEFINITE_OUTAGE');
@@ -199,17 +199,17 @@ function fmt(v){
       const card=document.createElement('div'); card.className='card';
       const st=document.createElement('div');
       st.className='status '+(current?'off':'on');
-      st.textContent = current ? '⚠️ Возможное отключение сейчас' : '💡 Свет есть';
+      st.textContent = current ? '⚡ Отключение сейчас' : '💡 Свет есть';
       card.appendChild(st);
 
       const sub=document.createElement('div'); sub.className='sub';
       if(current){
         const m=Math.floor((hoursToDate(current.end,now)-now)/60000);
-        sub.textContent = 'До возможного включения: ' + m + ' мин';
+        sub.textContent = 'До включения: ' + m + ' мин';
       } else if(next){
         const m=Math.floor((hoursToDate(next.start,now)-now)/60000);
         sub.classList.add('warn');
-        sub.textContent = 'До возможного отключения: ' + m + ' мин';
+        sub.textContent = 'До отключения: ' + m + ' мин';
       } else sub.textContent='Отключений больше нет';
       card.appendChild(sub);
       out.appendChild(card);
