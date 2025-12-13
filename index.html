@@ -166,24 +166,23 @@ function fmt(v){
 
     function render(){
       const now = kyivNow();
+      // dailySchedule имеет формат: city → groups → group → [ [today], [tomorrow] ]
       const cityData = daily?.[city]?.groups;
       if(!cityData) throw new Error('city not found');
-      if(!cityData) return;
 
       groupSel.innerHTML='';
-      Object.keys(cityData || {}).forEach(g=>{
+      Object.keys(cityData).forEach(g=>{
         const o=document.createElement('option');
         o.value=g; o.textContent=g.replace('group_','');
         if(g===group) o.selected=true;
         groupSel.appendChild(o);
       });
 
-      const gData = cityData?.[group];
-      title.textContent = city+' — группа '+group.replace('group_','');
+      const gData = cityData[group];
+      if(!Array.isArray(gData)) throw new Error('group data invalid');
 
-      if(!gData || !Array.isArray(gData.today)) throw new Error('today missing');
-      const today = gData.today;
-      const tomorrow = gData?.tomorrow || [];
+      const today = gData[0] || [];
+      const tomorrow = gData[1] || [];
       const slots = today;
       const outages = slots.filter(s=>s.type==='DEFINITE_OUTAGE');
 
