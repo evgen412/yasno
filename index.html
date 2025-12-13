@@ -194,10 +194,10 @@ function fmt(v){
 
       const sub=document.createElement('div'); sub.className='sub';
       if(current){
-        const m=Math.floor((parseTime(current.end,now)-now)/60000);
+        const m=Math.floor((hoursToDate(current.end,now)-now)/60000);
         sub.textContent='До включения: '+m+' мин';
       } else if(next){
-        const m=Math.floor((parseTime(next.start,now)-now)/60000);
+        const m=Math.floor((hoursToDate(next.start,now)-now)/60000);
         sub.classList.add('warn');
         sub.textContent='До отключения: '+m+' мин';
       } else sub.textContent='Отключений больше нет';
