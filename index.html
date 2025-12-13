@@ -199,7 +199,9 @@
         const res = await fetch(URL);
         const json = await res.json();
 
-        const schedule = json.components.find(c => c.template_name === 'electricity-outages-daily-schedule')?.schedule;
+        const component = json.components.find(c => c.template_name === 'electricity-outages-daily-schedule');
+        const schedule = component?.schedule;
+        const dailySchedule = component?.dailySchedule;
 
         // 🔹 восстановление города (storage → default)
         let cityKey = load(STORAGE_KEYS.city) || DEFAULT_CITY;
@@ -215,7 +217,9 @@
           citySelect.appendChild(opt);
         });
 
-        let cityData = schedule?.[cityKey] || schedule?.[Object.keys(schedule || {})[0]];
+        // данные по городу: сначала фактические (dailySchedule), затем fallback на план
+        let cityDaily = dailySchedule?.[cityKey];
+        let cityData = cityDaily?.groups || schedule?.[cityKey] || schedule?.[Object.keys(schedule || {})[0]];
 
         if (!cityData) {
           output.innerHTML = '<div class="error">Город не найден</div>';
@@ -236,11 +240,14 @@
           const todayIndex = (now.getDay() + 6) % 7;
           const tomorrowIndex = (todayIndex + 1) % 7;
 
+          // фактические данные по группе
+          const groupDaily = cityDaily?.groups?.[groupKey];
           const groupData = cityData[groupKey];
           document.getElementById('title').textContent = `${cityKey.charAt(0).toUpperCase() + cityKey.slice(1)} — группа ${groupKey.replace('group_', '')}`;
 
-          const todaySlots = groupData[todayIndex] || [];
-          const tomorrowSlots = groupData[tomorrowIndex] || [];
+          // today / tomorrow: фактические интервалы имеют приоритет
+          const todaySlots = groupDaily?.today || groupData[todayIndex] || [];
+          const tomorrowSlots = groupDaily?.tomorrow || groupData[tomorrowIndex] || [];
 
           let isNowOff = false;
           let nextSlot = null;
@@ -251,8 +258,8 @@
             const to = new Date(now);
             to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
 
-            if (now >= from && now <= to) isNowOff = true;
-            if (from > now && !nextSlot) nextSlot = s;
+            if (s.type === 'DEFINITE_OUTAGE' && now >= from && now <= to) isNowOff = true;
+            if (s.type === 'DEFINITE_OUTAGE' && from > now && !nextSlot) nextSlot = s;
           });
 
           output.innerHTML = '';
@@ -263,7 +270,7 @@
           const status = document.createElement('div');
           status.className = 'status ' + (isNowOff ? 'off' : 'on');
           status.textContent = isNowOff
-            ? '⚡ Возможное отключение сейчас'
+            ? '⚡ Отключение сейчас'
             : '💡 Свет есть';
 
           const sub = document.createElement('div');
@@ -333,7 +340,7 @@
               const to = new Date(now);
               to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
 
-              if (highlightToday && now >= from && now <= to) {
+              if (highlightToday && s.type === 'DEFINITE_OUTAGE' && now >= from && now <= to) {
                 div.classList.add('current');
               } else if (highlightToday && nextSlot === s) {
                 div.classList.add('next');
