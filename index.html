@@ -246,8 +246,13 @@
           document.getElementById('title').textContent = `${cityKey.charAt(0).toUpperCase() + cityKey.slice(1)} — группа ${groupKey.replace('group_', '')}`;
 
           // today / tomorrow: фактические интервалы имеют приоритет
-          const todaySlots = groupDaily?.today || groupData[todayIndex] || [];
-          const tomorrowSlots = groupDaily?.tomorrow || groupData[tomorrowIndex] || [];
+          // today / tomorrow: фактические интервалы имеют приоритет
+          const todaySlotsRaw = groupDaily?.today || groupData[todayIndex] || [];
+          const tomorrowSlotsRaw = groupDaily?.tomorrow || groupData[tomorrowIndex] || [];
+
+          // ⛔ учитываем ТОЛЬКО реальные отключения (DEFINITE_OUTAGE)
+          const todaySlots = todaySlotsRaw.filter(s => s.type === 'DEFINITE_OUTAGE');
+          const tomorrowSlots = tomorrowSlotsRaw.filter(s => s.type === 'DEFINITE_OUTAGE');
 
           let isNowOff = false;
           let nextSlot = null;
@@ -258,8 +263,8 @@
             const to = new Date(now);
             to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
 
-            if (s.type === 'DEFINITE_OUTAGE' && now >= from && now <= to) isNowOff = true;
-            if (s.type === 'DEFINITE_OUTAGE' && from > now && !nextSlot) nextSlot = s;
+            if (now >= from && now <= to) isNowOff = true;
+            if (from > now && !nextSlot) nextSlot = s;
           });
 
           output.innerHTML = '';
@@ -353,8 +358,8 @@
             output.appendChild(card);
           }
 
-          renderDay('Сегодня', todaySlots, true);
-          renderDay('Завтра', tomorrowSlots, false);
+          renderDay('Сегодня', todaySlotsRaw, true);
+          renderDay('Завтра', tomorrowSlotsRaw, false);
 
           const week = document.createElement('div');
           week.className = 'card week';
