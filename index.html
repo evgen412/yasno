@@ -147,12 +147,16 @@ function fmt(v){
     const comp = json.components?.find(c=>c.template_name==='electricity-outages-daily-schedule');
     if(!comp) throw new Error('component not found');
 
-    // ФАКТИЧЕСКИЙ график (как на сайте)
-    if(!comp.dailySchedule) throw new Error('dailySchedule missing');
+    // Пытаемся взять ФАКТИЧЕСКИЙ график (dailySchedule)
+    // ⚠️ dailySchedule приходит ТОЛЬКО когда бекенд смог определить адрес
+    // если его нет — честно делаем fallback на schedule
 
-    const daily = typeof comp.dailySchedule === 'string'
-      ? JSON.parse(comp.dailySchedule)
-      : comp.dailySchedule;
+    let daily = null;
+    if(comp.dailySchedule){
+      daily = typeof comp.dailySchedule === 'string'
+        ? JSON.parse(comp.dailySchedule)
+        : comp.dailySchedule;
+    }
 
     let city = load('city') || DEF_CITY;
     let group = load('group') || DEF_GROUP;
@@ -167,24 +171,21 @@ function fmt(v){
     function render(){
       const now = kyivNow();
       // dailySchedule имеет формат: city → groups → group → [ [today], [tomorrow] ]
-      const cityData = daily?.[city]?.groups;
-      if(!cityData) throw new Error('city not found');
+      let slots = [];
 
-      groupSel.innerHTML='';
-      Object.keys(cityData).forEach(g=>{
-        const o=document.createElement('option');
-        o.value=g; o.textContent=g.replace('group_','');
-        if(g===group) o.selected=true;
-        groupSel.appendChild(o);
-      });
+      if(daily && daily?.[city]?.groups?.[group]){
+        // === ФАКТИЧЕСКИЙ график ===
+        const gData = daily[city].groups[group];
+        slots = gData[0] || [];
+      } else {
+        // === FALLBACK: возможные интервалы ===
+        const sched = comp.schedule?.[city]?.[group] || [];
+        slots = sched[0] || [];
+      }
 
-      const gData = cityData[group];
-      if(!Array.isArray(gData)) throw new Error('group data invalid');
-
-      const today = gData[0] || [];
-      const tomorrow = gData[1] || [];
-      const slots = today;
-      const outages = slots.filter(s=>s.type==='DEFINITE_OUTAGE');
+      const outages = slots.filter(s=>
+        s.type === 'DEFINITE_OUTAGE' || s.type === 'POSSIBLE_OUTAGE'
+      );
 
       let current=null, next=null;
       outages.forEach(s=>{
