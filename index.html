@@ -103,7 +103,9 @@ button { cursor: pointer; }
   <div id="out">Загрузка…</div>
 
 <script>
-const API = 'https://corsproxy.io/?https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity';
+// ⚠️ corsproxy.io часто блокирует GitHub Pages
+// используем стабильный публичный прокси
+const API = 'https://api.allorigins.win/raw?url=https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity';
 const DEF_CITY = 'kiev';
 const DEF_GROUP = 'group_2.2';
 
@@ -131,7 +133,8 @@ function parseTime(str, base){
   try{
     const res = await fetch(API);
     const json = await res.json();
-    const comp = json.components.find(c=>c.template_name==='electricity-outages-daily-schedule');
+    const comp = json.components?.find(c=>c.template_name==='electricity-outages-daily-schedule');
+    if(!comp || !comp.dailySchedule) throw new Error('dailySchedule not found');
     const daily = comp.dailySchedule;
 
     let city = load('city') || DEF_CITY;
