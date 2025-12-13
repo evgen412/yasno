@@ -121,6 +121,12 @@
       border-left: 4px solid var(--primary);
     }
 
+    .slot.current {
+      background: rgba(255,69,58,0.18);
+      border-left: 4px solid var(--warn);
+      font-weight: 600;
+    }
+
     .week .slot {
       font-size: 0.85rem;
       background: var(--card);
@@ -323,8 +329,20 @@
               const div = document.createElement('div');
               div.className = 'slot';
               div.textContent = `${toTime(s.start)} — ${toTime(s.end)}`;
-              if (highlightToday && nextSlot === s) div.classList.add('next');
+
+              const from = new Date(now);
+              from.setHours(Math.floor(s.start), s.start % 1 ? 30 : 0, 0, 0);
+              const to = new Date(now);
+              to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
+
+              if (highlightToday && now >= from && now <= to) {
+                div.classList.add('current');
+              } else if (highlightToday && nextSlot === s) {
+                div.classList.add('next');
+              }
+
               list.appendChild(div);
+            });
             });
 
             card.appendChild(list);
@@ -391,4 +409,3 @@
 </body>
 </html>
 ```
-
