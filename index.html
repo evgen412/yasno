@@ -170,6 +170,7 @@
 
     function formatHM(date) {
       return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+    }`;
     }:${m}`;
     }
 
@@ -359,6 +360,34 @@
           renderDay('Сегодня', todayRaw, true, now);
           renderDay('Завтра', tomorrowRaw, false, tomorrow);
         }
+
+        const initialGroup = load(STORAGE_KEYS.group) || DEFAULT_GROUP;
+        render(initialGroup);
+
+        citySelect.onchange = () => {
+          save(STORAGE_KEYS.city, citySelect.value);
+          cityKey = citySelect.value;
+          cityDaily = dailySchedule?.[cityKey];
+          cityData = cityDaily?.groups || schedule?.[cityKey];
+          if (!cityData) return;
+
+          groupSelect.innerHTML = '';
+          Object.keys(cityData).forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.textContent = g.replace('group_', '');
+            groupSelect.appendChild(opt);
+          });
+
+          render(groupSelect.value);
+        };
+
+        groupSelect.onchange = () => {
+          save(STORAGE_KEYS.group, groupSelect.value);
+          render(groupSelect.value);
+        };
+
+        setInterval(() => render(groupSelect.value), 5 * 60 * 1000);
         }
 
         const initialGroup = load(STORAGE_KEYS.group) || DEFAULT_GROUP;
