@@ -193,7 +193,6 @@ function fmt(v){
         const sched = comp.schedule[city][group] || [];
         slots = sched[0] || [];
       }
-      }
 
       const outages = slots.filter(s=>
         s.type === 'DEFINITE_OUTAGE' || s.type === 'POSSIBLE_OUTAGE'
