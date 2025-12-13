@@ -1,8 +1,9 @@
-
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Отключения света — Киев</title>
   <style>
     :root {
@@ -35,6 +36,8 @@
       max-width: 720px;
       margin: 0 auto;
       -webkit-font-smoothing: antialiased;
+      font-size: 17px; /* базовый мобильный размер */
+    }
     }
 
     body.light {
@@ -44,7 +47,7 @@
 
     h1 {
       margin: 4px 0 14px 0;
-      font-size: 1.25rem;
+      font-size: 1.5rem; /* крупнее на мобиле */
       font-weight: 600;
     }
 
@@ -53,13 +56,14 @@
     }
 
     select {
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: 12px;
       border: 1px solid var(--border);
       background: var(--card);
       color: inherit;
-      font-size: 1rem;
+      font-size: 1.05rem;
       appearance: none;
+    }
     }
     
 
@@ -75,7 +79,7 @@
       align-items: center;
       gap: 8px;
       font-weight: 600;
-      font-size: 1.05rem;
+      font-size: 1.15rem; /* статус крупнее */
     }
 
     .status.on { color: var(--ok); }
@@ -83,7 +87,7 @@
 
     .sub {
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 1.05rem; /* текст таймера крупнее */
       margin-top: 6px;
     }
 
@@ -105,11 +109,11 @@
     }
 
     .slot {
-      padding: 10px 12px;
+      padding: 12px 14px;
       border-radius: 12px;
       background: var(--card);
       border: 1px solid var(--border);
-      font-size: 0.95rem;
+      font-size: 1.05rem; /* слоты читаемые */
     }
 
     .slot.next {
@@ -386,4 +390,5 @@
   </script>
 </body>
 </html>
+```
 
