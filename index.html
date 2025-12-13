@@ -161,7 +161,7 @@ function fmt(v){
     let city = load('city') || DEF_CITY;
     let group = load('group') || DEF_GROUP;
 
-    Object.keys(daily).forEach(c=>{
+    Object.keys(daily || comp.schedule || {}).forEach(c=>{
       const o=document.createElement('option');
       o.value=c; o.textContent=c;
       if(c===city) o.selected=true;
@@ -169,18 +169,30 @@ function fmt(v){
     });
 
     function render(){
+      groupSel.innerHTML='';
       const now = kyivNow();
       // dailySchedule имеет формат: city → groups → group → [ [today], [tomorrow] ]
       let slots = [];
 
-      if(daily && daily?.[city]?.groups?.[group]){
-        // === ФАКТИЧЕСКИЙ график ===
+      if(daily && daily?.[city]?.groups){
+        Object.keys(daily[city].groups).forEach(g=>{
+          const o=document.createElement('option');
+          o.value=g; o.textContent=g.replace('group_','');
+          if(g===group) o.selected=true;
+          groupSel.appendChild(o);
+        });
         const gData = daily[city].groups[group];
-        slots = gData[0] || [];
-      } else {
-        // === FALLBACK: возможные интервалы ===
-        const sched = comp.schedule?.[city]?.[group] || [];
+        slots = gData?.[0] || [];
+      } else if(comp.schedule?.[city]){
+        Object.keys(comp.schedule[city]).forEach(g=>{
+          const o=document.createElement('option');
+          o.value=g; o.textContent=g.replace('group_','');
+          if(g===group) o.selected=true;
+          groupSel.appendChild(o);
+        });
+        const sched = comp.schedule[city][group] || [];
         slots = sched[0] || [];
+      }
       }
 
       const outages = slots.filter(s=>
