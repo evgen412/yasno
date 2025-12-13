@@ -211,7 +211,6 @@
         <div class="card">
             <div id="scheduleTypeBadge" class="schedule-type type-planned">Плановый график</div>
             
-            <!-- Переключатель дней -->
             <div class="day-switcher">
                 <button class="day-btn active" id="btnToday">Сегодня</button>
                 <button class="day-btn" id="btnTomorrow">Завтра</button>
@@ -252,7 +251,6 @@
             isActual: {} 
         };
         
-        // Текущий выбранный день (0 - сегодня, 1 - завтра)
         let SELECTED_DAY_OFFSET = 0;
 
         const CityNames = {
@@ -377,7 +375,6 @@
         const timerLabel = document.getElementById('timerLabel');
         const timerValue = document.getElementById('timerValue');
 
-        // Кнопки переключения дней
         const btnToday = document.getElementById('btnToday');
         const btnTomorrow = document.getElementById('btnTomorrow');
 
@@ -419,6 +416,21 @@
             } else {
                 citySelect.innerHTML = '<option disabled>Ошибка загрузки</option>';
             }
+
+            // ЗАПУСК ОБНОВЛЕНИЯ ТАЙМЕРА
+            // 1. Каждую минуту
+            setInterval(() => {
+                if (citySelect.value && groupSelect.value) {
+                    onGroupChange(); // Пересчитываем и перерисовываем
+                }
+            }, 60000);
+
+            // 2. При возвращении на вкладку (мгновенно)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && citySelect.value && groupSelect.value) {
+                    onGroupChange();
+                }
+            });
         }
 
         async function onCityChange(resetGroup = true) {
@@ -458,13 +470,12 @@
             placeholderDiv.classList.add('hidden');
         }
 
-        // Обработчики смены дня
         btnToday.addEventListener('click', () => {
             if (SELECTED_DAY_OFFSET !== 0) {
                 SELECTED_DAY_OFFSET = 0;
                 btnToday.classList.add('active');
                 btnTomorrow.classList.remove('active');
-                onGroupChange(); // Перерисовка
+                onGroupChange(); 
             }
         });
 
@@ -473,7 +484,7 @@
                 SELECTED_DAY_OFFSET = 1;
                 btnTomorrow.classList.add('active');
                 btnToday.classList.remove('active');
-                onGroupChange(); // Перерисовка
+                onGroupChange(); 
             }
         });
 
@@ -549,7 +560,6 @@
 
         function renderSchedule(rawSchedule, isActual) {
             const today = new Date();
-            // Расчет даты для отображения
             const viewDate = new Date(today);
             viewDate.setDate(today.getDate() + SELECTED_DAY_OFFSET);
             
@@ -572,22 +582,15 @@
                 return;
             }
 
-            // Данные для таймера (всегда нужны на сегодня и завтра, независимо от того, что смотрим)
             let todayRaw = [];
             let tomorrowRaw = [];
-            
-            // Данные для отображения списка
             let viewRaw = [];
 
             if (isActual || rawSchedule.length <= 3) {
-                // Структура dailySchedule: [0]=Сегодня, [1]=Завтра
                 todayRaw = rawSchedule[0] || [];
                 tomorrowRaw = rawSchedule[1] || [];
-                
-                // Выбираем что показывать в списке
                 viewRaw = SELECTED_DAY_OFFSET === 0 ? todayRaw : tomorrowRaw;
             } else {
-                // Структура weekly: 0=Пн...6=Вс
                 const jsDay = today.getDay(); 
                 const todayIndex = (jsDay === 0) ? 6 : jsDay - 1;
                 const nextIndex = (todayIndex + 1) % 7;
@@ -595,13 +598,10 @@
                 todayRaw = rawSchedule[todayIndex] || [];
                 tomorrowRaw = rawSchedule[nextIndex] || [];
                 
-                // Для отображения списка берем день со сдвигом
-                // Если сегодня Вс (0 -> 6), завтра Пн (0)
                 const viewIndex = (todayIndex + SELECTED_DAY_OFFSET) % 7;
                 viewRaw = rawSchedule[viewIndex] || [];
             }
 
-            // Рендерим список для ВЫБРАННОГО дня
             const viewSchedule = normalizeSchedule(viewRaw);
             const currentHour = today.getHours() + today.getMinutes() / 60;
 
@@ -611,7 +611,6 @@
                 dayScheduleRender(viewSchedule, currentHour);
             }
 
-            // ОБНОВЛЯЕМ ТАЙМЕР И СТАТУС (ВСЕГДА ПО ТЕКУЩЕМУ ВРЕМЕНИ СЕГОДНЯ)
             const todayNorm = normalizeSchedule(todayRaw);
             const tomorrowNorm = normalizeSchedule(tomorrowRaw);
             
@@ -641,7 +640,6 @@
                     typeText = 'Свет есть';
                 }
 
-                // Подсветка текущего времени ТОЛЬКО если смотрим СЕГОДНЯ
                 if (SELECTED_DAY_OFFSET === 0 && currentHour >= slot.start && currentHour < slot.end) {
                     className += ' is-now';
                 }
