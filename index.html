@@ -1,13 +1,12 @@
-```html
 <!DOCTYPE html>
+
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Отключения света — Киев</title>
+  <title>Отключения света — YASNO</title>
   <style>
     :root {
-      /* Dark mobile-native theme (default) */
       --bg: #000000;
       --card: #1c1c1e;
       --primary: #0a84ff;
@@ -17,419 +16,211 @@
       --border: #2c2c2e;
     }
 
-    .light {
-      /* Light mobile-native theme (iOS / Android) */
-      --bg: #f2f2f7;            /* iOS system background */
-      --card: #ffffff;         /* cards */
-      --primary: #0a84ff;      /* iOS blue */
-      --ok: #34c759;           /* iOS green */
-      --warn: #ff3b30;         /* iOS red */
-      --muted: #6c6c70;        /* secondary label */
-      --border: #d1d1d6;
-    }
+```
+body.light {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --primary: #0a84ff;
+  --ok: #34c759;
+  --warn: #ff3b30;
+  --muted: #6c6c70;
+  --border: #d1d1d6;
+}
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif;
-      background: var(--bg);
-      color: #f2f2f7; /* dark theme text */
-      padding: 16px;
-      max-width: 720px;
-      margin: 0 auto;
-      -webkit-font-smoothing: antialiased;
-      font-size: 17px; /* базовый мобильный размер */
-    }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif;
+  background: var(--bg);
+  color: #f2f2f7;
+  padding: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 17px;
+}
 
-    body.light {
-      color: #1c1c1e; /* light theme text */
-    }
-    
+body.light { color: #1c1c1e; }
 
-    h1 {
-      margin: 4px 0 14px 0;
-      font-size: 1.5rem; /* крупнее на мобиле */
-      font-weight: 600;
-    }
+h1 { font-size: 1.5rem; margin: 6px 0 14px; }
 
-    .controls {
-      margin-bottom: 14px;
-    }
+.controls { margin-bottom: 14px; }
+select, button {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: inherit;
+  font-size: 1rem;
+}
 
-    select {
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: inherit;
-      font-size: 1.05rem;
-      appearance: none;
-    }
-    
+button { cursor: pointer; }
 
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-    }
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
 
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 1.15rem; /* статус крупнее */
-    }
+.status { font-size: 1.15rem; font-weight: 600; }
+.status.on { color: var(--ok); }
+.status.off { color: var(--warn); }
 
-    .status.on { color: var(--ok); }
-    .status.off { color: var(--warn); }
+.sub { margin-top: 6px; color: var(--muted); }
+.sub.warn { color: var(--warn); font-weight: 600; }
 
-    .sub {
-      color: var(--muted);
-      font-size: 1.05rem; /* текст таймера крупнее */
-      margin-top: 6px;
-    }
+.day-title { font-weight: 600; margin-bottom: 8px; }
 
-    .sub.warn {
-      color: var(--warn);
-      font-weight: 600;
-    }
+.slots { display: grid; gap: 6px; }
+.slot {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.slot.current {
+  border-left: 4px solid var(--warn);
+  background: rgba(255,69,58,0.18);
+  font-weight: 600;
+}
+.slot.next {
+  border-left: 4px solid var(--primary);
+  background: rgba(10,132,255,0.15);
+}
 
-    .day-title {
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 0.95rem;
-      color: inherit;
-    }
+.error { color: var(--warn); font-weight: 600; }
+```
 
-    .slots {
-      display: grid;
-      gap: 6px;
-    }
-
-    .slot {
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      font-size: 1.05rem; /* слоты читаемые */
-    }
-
-    .slot.next {
-      background: rgba(10,132,255,0.15);
-      border-left: 4px solid var(--primary);
-    }
-
-    .slot.current {
-      background: rgba(255,69,58,0.18);
-      border-left: 4px solid var(--warn);
-      font-weight: 600;
-    }
-
-    .week .slot {
-      font-size: 0.85rem;
-      background: var(--card);
-    }
-
-    .error {
-      color: var(--warn);
-      font-weight: 600;
-    }
   </style>
 </head>
 <body>
-  <h1 id="title">Киев — группа 2.2</h1>
+  <h1 id="title">Загрузка…</h1>
 
   <div class="controls">
-    Город:
-    <select id="citySelect"></select>
-    
-    Группа:
-    <select id="groupSelect"></select>
-    
-    <button id="themeToggle" style="margin-left:12px;padding:10px 14px;border-radius:12px;border:none;background:var(--card);color:inherit;">🌙</button>
+    Город: <select id="city"></select>
+    Группа: <select id="group"></select>
+    <button id="theme">🌙</button>
   </div>
 
-  <div id="output">Загрузка…</div>
+  <div id="out">Загрузка…</div>
 
-  <script>
-    const URL = 'https://corsproxy.io/?https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity';
-    const DEFAULT_CITY = 'kiev';
-    const DEFAULT_GROUP = 'group_2.2';
+<script>
+const API = 'https://corsproxy.io/?https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity';
+const DEF_CITY = 'kiev';
+const DEF_GROUP = 'group_2.2';
 
-    // ===== helpers for dailySchedule =====
-    function toTimeFromString(str) {
-      return str;
+const store = (k,v)=>{ try{localStorage.setItem(k,v)}catch{} };
+const load = k=>{ try{return localStorage.getItem(k)}catch{return null} };
+
+const citySel = document.getElementById('city');
+const groupSel = document.getElementById('group');
+const out = document.getElementById('out');
+const title = document.getElementById('title');
+const themeBtn = document.getElementById('theme');
+
+function kyivNow(){
+  return new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Kyiv'}));
+}
+
+function parseTime(str, base){
+  const [h,m]=str.split(':').map(Number);
+  const d=new Date(base);
+  d.setHours(h,m,0,0);
+  return d;
+}
+
+(async function init(){
+  try{
+    const res = await fetch(API);
+    const json = await res.json();
+    const comp = json.components.find(c=>c.template_name==='electricity-outages-daily-schedule');
+    const daily = comp.dailySchedule;
+
+    let city = load('city') || DEF_CITY;
+    let group = load('group') || DEF_GROUP;
+
+    Object.keys(daily).forEach(c=>{
+      const o=document.createElement('option');
+      o.value=c; o.textContent=c;
+      if(c===city) o.selected=true;
+      citySel.appendChild(o);
+    });
+
+    function render(){
+      const now = kyivNow();
+      const cityData = daily[city];
+      if(!cityData) return;
+
+      groupSel.innerHTML='';
+      Object.keys(cityData.groups).forEach(g=>{
+        const o=document.createElement('option');
+        o.value=g; o.textContent=g.replace('group_','');
+        if(g===group) o.selected=true;
+        groupSel.appendChild(o);
+      });
+
+      const gData = cityData.groups[group];
+      title.textContent = city+' — группа '+group.replace('group_','');
+
+      const todayStr = now.toISOString().slice(0,10);
+      const day = gData.days.find(d=>d.date===todayStr);
+      const slots = day?.intervals || [];
+      const outages = slots.filter(s=>s.type==='DEFINITE_OUTAGE');
+
+      let current=null, next=null;
+      outages.forEach(s=>{
+        const f=parseTime(s.start,now), t=parseTime(s.end,now);
+        if(now>=f && now<=t) current=s;
+        if(f>now && !next) next=s;
+      });
+
+      out.innerHTML='';
+      const card=document.createElement('div'); card.className='card';
+      const st=document.createElement('div');
+      st.className='status '+(current?'off':'on');
+      st.textContent=current?'⚡ Отключение сейчас':'💡 Свет есть';
+      card.appendChild(st);
+
+      const sub=document.createElement('div'); sub.className='sub';
+      if(current){
+        const m=Math.floor((parseTime(current.end,now)-now)/60000);
+        sub.textContent='До включения: '+m+' мин';
+      } else if(next){
+        const m=Math.floor((parseTime(next.start,now)-now)/60000);
+        sub.classList.add('warn');
+        sub.textContent='До отключения: '+m+' мин';
+      } else sub.textContent='Отключений больше нет';
+      card.appendChild(sub);
+      out.appendChild(card);
+
+      const dayCard=document.createElement('div'); dayCard.className='card';
+      const dt=document.createElement('div'); dt.className='day-title'; dt.textContent='Сегодня';
+      dayCard.appendChild(dt);
+      const list=document.createElement('div'); list.className='slots';
+      slots.forEach(s=>{
+        const d=document.createElement('div'); d.className='slot';
+        d.textContent=s.start+' — '+s.end;
+        if(current===s) d.classList.add('current');
+        if(next===s) d.classList.add('next');
+        list.appendChild(d);
+      });
+      dayCard.appendChild(list);
+      out.appendChild(dayCard);
     }
 
-    function parseTime(str, baseDate) {
-      const [h, m] = str.split(':').map(Number);
-      const d = new Date(baseDate);
-      d.setHours(h, m, 0, 0);
-      return d;
-    }
+    render();
+    citySel.onchange=()=>{city=citySel.value; store('city',city); render();};
+    groupSel.onchange=()=>{group=groupSel.value; store('group',group); render();};
+    setInterval(render,5*60*1000);
+  }catch(e){ out.innerHTML='<div class="error">Ошибка загрузки данных</div>'; }
+})();
 
-    function formatHM(date) {
-      return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-    }`;
-    }:${m}`;
-    }
+const savedTheme = load('theme');
+if(savedTheme==='light') document.body.classList.add('light');
 
-    function kyivNow() {
-      return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Kyiv' }));
-    }
+themeBtn.onclick=()=>{
+  document.body.classList.toggle('light');
+  store('theme',document.body.classList.contains('light')?'light':'dark');
+};
+</script>
 
-    // === helpers for fail-safe & storage ===
-    const STORAGE_KEYS = {
-      city: 'yasno_city',
-      group: 'yasno_group',
-      theme: 'yasno_theme'
-    };
-
-    function safeGet(id) {
-      return document.getElementById(id) || null;
-    }
-
-    function save(key, value) {
-      try { localStorage.setItem(key, value); } catch {}
-    }
-
-    function load(key) {
-      try { return localStorage.getItem(key); } catch { return null; }
-    }
-
-    async function loadSchedule() {
-      const output = safeGet('output');
-      const groupSelect = safeGet('groupSelect');
-      const citySelect = safeGet('citySelect');
-
-      if (!output || !groupSelect || !citySelect) {
-        console.warn('UI elements missing, abort render');
-        return;
-      }
-
-      try {
-        const res = await fetch(URL);
-        const json = await res.json();
-
-        const component = json.components.find(c => c.template_name === 'electricity-outages-daily-schedule');
-        const schedule = component?.schedule;
-        const dailySchedule = component?.dailySchedule;
-
-        // 🔹 восстановление города (storage → default)
-        let cityKey = load(STORAGE_KEYS.city) || DEFAULT_CITY;
-
-        // 🔹 восстановление города (storage → default)
-        // 🔹 список городов
-        citySelect.innerHTML = '';
-        Object.keys(schedule || {}).forEach(city => {
-          const opt = document.createElement('option');
-          opt.value = city;
-          opt.textContent = city.charAt(0).toUpperCase() + city.slice(1);
-          if (city === cityKey) opt.selected = true;
-          citySelect.appendChild(opt);
-        });
-
-        // данные по городу: сначала фактические (dailySchedule), затем fallback на план
-        let cityDaily = dailySchedule?.[cityKey];
-        let cityData = cityDaily?.groups || schedule?.[cityKey] || schedule?.[Object.keys(schedule || {})[0]];
-
-        if (!cityData) {
-          output.innerHTML = '<div class="error">Город не найден</div>';
-          return;
-        }
-
-        groupSelect.innerHTML = '';
-        Object.keys(cityData).forEach(g => {
-          const opt = document.createElement('option');
-          opt.value = g;
-          opt.textContent = g.replace('group_', '');
-          if (g === (load(STORAGE_KEYS.group) || DEFAULT_GROUP)) opt.selected = true;
-          groupSelect.appendChild(opt);
-        });
-
-        function render(groupKey) {
-          const now = kyivNow();
-
-          // ===== DAILY SCHEDULE (REAL DATA) =====
-          const groupDaily = cityDaily?.groups?.[groupKey];
-          const groupPlan = cityData[groupKey];
-
-          document.getElementById('title').textContent = `${cityKey.charAt(0).toUpperCase() + cityKey.slice(1)} — группа ${groupKey.replace('group_', '')}`;
-
-          function getDailyIntervals(dateObj) {
-            if (!groupDaily?.days) return [];
-            const dateStr = dateObj.toISOString().slice(0,10);
-            const day = groupDaily.days.find(d => d.date === dateStr);
-            return day?.intervals || [];
-          }
-
-          const todayRaw = getDailyIntervals(now);
-          const tomorrow = new Date(now.getTime() + 86400000);
-          const tomorrowRaw = getDailyIntervals(tomorrow);
-
-          const todayOutages = todayRaw.filter(s => s.type === 'DEFINITE_OUTAGE');
-
-          let isNowOff = false;
-          let nextSlot = null;
-          let currentSlot = null;
-
-          todayOutages.forEach(s => {
-            const from = parseTime(s.start, now);
-            const to = parseTime(s.end, now);
-
-            if (now >= from && now <= to) {
-              isNowOff = true;
-              currentSlot = s;
-            }
-            if (from > now && !nextSlot) nextSlot = s;
-          });
-
-          output.innerHTML = '';
-
-          // ===== STATUS CARD =====
-          const cardStatus = document.createElement('div');
-          cardStatus.className = 'card';
-
-          const status = document.createElement('div');
-          status.className = 'status ' + (isNowOff ? 'off' : 'on');
-          status.textContent = isNowOff ? '⚡ Отключение сейчас' : '💡 Свет есть';
-
-          const sub = document.createElement('div');
-          sub.className = 'sub';
-
-          if (isNowOff && currentSlot) {
-            const to = parseTime(currentSlot.end, now);
-            const diffMin = Math.max(0, Math.floor((to - now) / 60000));
-            const h = Math.floor(diffMin / 60);
-            const m = diffMin % 60;
-            sub.textContent = `До включения: ${h > 0 ? h + ' ч ' : ''}${m} мин`;
-          } else if (nextSlot) {
-            const from = parseTime(nextSlot.start, now);
-            const diffMin = Math.max(0, Math.floor((from - now) / 60000));
-            const h = Math.floor(diffMin / 60);
-            const m = diffMin % 60;
-            sub.classList.add('warn');
-            sub.textContent = `До отключения: ${h > 0 ? h + ' ч ' : ''}${m} мин (${nextSlot.start} — ${nextSlot.end})`;
-          } else {
-            sub.textContent = 'Отключений больше не ожидается сегодня';
-          }
-
-          cardStatus.appendChild(status);
-          cardStatus.appendChild(sub);
-          output.appendChild(cardStatus);
-
-          // ===== DAYS RENDER =====
-          function renderDay(title, slots, highlightToday, baseDate) {
-            const card = document.createElement('div');
-            card.className = 'card day';
-
-            const t = document.createElement('div');
-            t.className = 'day-title';
-            t.textContent = title;
-            card.appendChild(t);
-
-            const list = document.createElement('div');
-            list.className = 'slots';
-
-            if (!slots.length) {
-              const empty = document.createElement('div');
-              empty.className = 'slot';
-              empty.textContent = 'Нет отключений';
-              list.appendChild(empty);
-            }
-
-            slots.forEach(s => {
-              const div = document.createElement('div');
-              div.className = 'slot';
-              div.textContent = `${s.start} — ${s.end}`;
-
-              if (highlightToday && s.type === 'DEFINITE_OUTAGE') {
-                const from = parseTime(s.start, baseDate);
-                const to = parseTime(s.end, baseDate);
-                if (now >= from && now <= to) div.classList.add('current');
-                else if (nextSlot === s) div.classList.add('next');
-              }
-
-              list.appendChild(div);
-            });
-
-            card.appendChild(list);
-            output.appendChild(card);
-          }
-
-          renderDay('Сегодня', todayRaw, true, now);
-          renderDay('Завтра', tomorrowRaw, false, tomorrow);
-        }
-
-        const initialGroup = load(STORAGE_KEYS.group) || DEFAULT_GROUP;
-        render(initialGroup);
-
-        citySelect.onchange = () => {
-          save(STORAGE_KEYS.city, citySelect.value);
-          cityKey = citySelect.value;
-          cityDaily = dailySchedule?.[cityKey];
-          cityData = cityDaily?.groups || schedule?.[cityKey];
-          if (!cityData) return;
-
-          groupSelect.innerHTML = '';
-          Object.keys(cityData).forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g;
-            opt.textContent = g.replace('group_', '');
-            groupSelect.appendChild(opt);
-          });
-
-          render(groupSelect.value);
-        };
-
-        groupSelect.onchange = () => {
-          save(STORAGE_KEYS.group, groupSelect.value);
-          render(groupSelect.value);
-        };
-
-        setInterval(() => render(groupSelect.value), 5 * 60 * 1000);
-        }
-
-        const initialGroup = load(STORAGE_KEYS.group) || DEFAULT_GROUP;
-        render(initialGroup);
-
-        citySelect.onchange = () => {
-          save(STORAGE_KEYS.city, citySelect.value);
-          cityKey = citySelect.value;
-          cityData = schedule?.[cityKey];
-          if (!cityData) return;
-
-          groupSelect.innerHTML = '';
-          Object.keys(cityData).forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g;
-            opt.textContent = g.replace('group_', '');
-            if (g === DEFAULT_GROUP) opt.selected = true;
-            groupSelect.appendChild(opt);
-          });
-
-          render(groupSelect.value);
-        };
-        groupSelect.onchange = () => {
-          save(STORAGE_KEYS.group, groupSelect.value);
-          render(groupSelect.value);
-        };
-        setInterval(() => render(groupSelect.value), 5 * 60 * 1000);
-
-      } catch (e) {
-        output.innerHTML = '<div class="error">Ошибка загрузки данных</div>';
-      }
-    }
-
-    loadSchedule();
-
-    // переключение темы
-    const btn = document.getElementById('themeToggle');
-    btn.onclick = () => {
-      document.body.classList.toggle('light');
-      btn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
-    };
-  </script>
 </body>
 </html>
-```
