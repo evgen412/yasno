@@ -105,7 +105,8 @@ button { cursor: pointer; }
 <script>
 // ⚠️ corsproxy.io часто блокирует GitHub Pages
 // используем стабильный публичный прокси
-const API = 'https://api.allorigins.win/raw?url=https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity';
+// allorigins требует URLENCODED url
+const API = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity');
 const DEF_CITY = 'kiev';
 const DEF_GROUP = 'group_2.2';
 
