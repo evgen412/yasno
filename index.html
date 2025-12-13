@@ -145,8 +145,12 @@ function fmt(v){
     const text = await res.text();
     const json = JSON.parse(text);
     const comp = json.components?.find(c=>c.template_name==='electricity-outages-daily-schedule');
-    if(!comp || !comp.dailySchedule) throw new Error('dailySchedule not found');
-    const daily = comp.dailySchedule;
+    if(!comp) throw new Error('component not found');
+
+    // dailySchedule может быть либо объектом, либо строкой JSON
+    const daily = typeof comp.dailySchedule === 'string'
+      ? JSON.parse(comp.dailySchedule)
+      : comp.dailySchedule;
 
     let city = load('city') || DEF_CITY;
     let group = load('group') || DEF_GROUP;
@@ -160,7 +164,7 @@ function fmt(v){
 
     function render(){
       const now = kyivNow();
-      const cityData = daily[city]?.groups;
+      const cityData = daily?.[city]?.groups || daily?.[city];
       if(!cityData) return;
 
       groupSel.innerHTML='';
@@ -174,7 +178,11 @@ function fmt(v){
       const gData = cityData?.[group];
       title.textContent = city+' — группа '+group.replace('group_','');
 
-      const today = gData?.today || [];
+      const today = Array.isArray(gData?.today)
+        ? gData.today
+        : Array.isArray(gData)
+          ? gData[0] || []
+          : [];
       const tomorrow = gData?.tomorrow || [];
       const slots = today;
       const outages = slots.filter(s=>s.type==='DEFINITE_OUTAGE');
