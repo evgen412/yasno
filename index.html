@@ -103,129 +103,187 @@ button { cursor: pointer; }
   <div id="out">Загрузка…</div>
 
 <script>
-// ⚠️ corsproxy.io часто блокирует GitHub Pages
-// используем стабильный публичный прокси
-// allorigins требует URLENCODED url
-const API = 'https://yasno-proxy.uzgen140.workers.dev';const DEF_CITY = 'kiev';
+/* ===== CONFIG ===== */
+const API = 'https://yasno-proxy.uzgen140.workers.dev';
+const DEF_CITY = 'kiev';
 const DEF_GROUP = 'group_2.2';
 
+/* ===== STORAGE ===== */
 const store = (k,v)=>{ try{localStorage.setItem(k,v)}catch{} };
-const load = k=>{ try{return localStorage.getItem(k)}catch{return null} };
+const load  = k=>{ try{return localStorage.getItem(k)}catch{return null} };
 
-const citySel = document.getElementById('city');
+/* ===== ELEMENTS ===== */
+const citySel  = document.getElementById('city');
 const groupSel = document.getElementById('group');
-const out = document.getElementById('out');
+const out   = document.getElementById('out');
 const title = document.getElementById('title');
 const themeBtn = document.getElementById('theme');
 
+/* ===== TIME ===== */
 function kyivNow(){
-  return new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Kyiv'}));
+  return new Date(new Date().toLocaleString('en-US',{ timeZone:'Europe/Kyiv' }));
 }
 
-function parseTime(str, base){
-  const [h,m]=str.split(':').map(Number);
-  const d=new Date(base);
-  d.setHours(h,m,0,0);
+function hoursToDate(v, base){
+  const h = Math.floor(v);
+  const m = Math.round((v - h) * 60);
+  const d = new Date(base);
+  d.setHours(h, m, 0, 0);
   return d;
 }
 
+function fmt(v){
+  const h = String(Math.floor(v)).padStart(2,'0');
+  const m = v % 1 ? '30' : '00';
+  return `${h}:${m}`;
+}
+
+/* ===== INIT ===== */
 (async function init(){
   try{
     const res = await fetch(API);
+    if(!res.ok) throw new Error('network');
     const json = await res.json();
-    const comp = json.components?.find(c=>c.template_name==='electricity-outages-daily-schedule');
-    if(!comp || !comp.dailySchedule) throw new Error('dailySchedule not found');
-    const daily = comp.dailySchedule;
 
-    let city = load('city') || DEF_CITY;
+    const comp = json.components?.find(
+      c => c.template_name === 'electricity-outages-daily-schedule'
+    );
+    if(!comp || !comp.schedule) throw new Error('schedule not found');
+
+    const schedule = comp.schedule;
+
+    let city  = load('city')  || DEF_CITY;
     let group = load('group') || DEF_GROUP;
 
-    Object.keys(daily).forEach(c=>{
-      const o=document.createElement('option');
-      o.value=c; o.textContent=c;
-      if(c===city) o.selected=true;
+    /* --- cities --- */
+    citySel.innerHTML = '';
+    Object.keys(schedule).forEach(c=>{
+      const o = document.createElement('option');
+      o.value = c;
+      o.textContent = c;
+      if(c === city) o.selected = true;
       citySel.appendChild(o);
     });
 
     function render(){
       const now = kyivNow();
-      const cityData = daily[city];
+      const cityData = schedule[city];
       if(!cityData) return;
 
-      groupSel.innerHTML='';
-      Object.keys(cityData.groups).forEach(g=>{
-        const o=document.createElement('option');
-        o.value=g; o.textContent=g.replace('group_','');
-        if(g===group) o.selected=true;
+      /* --- groups --- */
+      groupSel.innerHTML = '';
+      Object.keys(cityData).forEach(g=>{
+        const o = document.createElement('option');
+        o.value = g;
+        o.textContent = g.replace('group_','');
+        if(g === group) o.selected = true;
         groupSel.appendChild(o);
       });
 
-      const gData = cityData.groups[group];
-      title.textContent = city+' — группа '+group.replace('group_','');
+      const days = cityData[group];
+      if(!Array.isArray(days)) return;
 
-      const todayStr = now.toISOString().slice(0,10);
-      const day = gData.days.find(d=>d.date===todayStr);
-      const slots = day?.intervals || [];
-      const outages = slots.filter(s=>s.type==='DEFINITE_OUTAGE');
+      const todaySlots = days[0] || [];
+      const outages = todaySlots.filter(s=>s.type === 'POSSIBLE_OUTAGE');
 
-      let current=null, next=null;
+      let current = null;
+      let next = null;
+
       outages.forEach(s=>{
-        const f=parseTime(s.start,now), t=parseTime(s.end,now);
-        if(now>=f && now<=t) current=s;
-        if(f>now && !next) next=s;
+        const from = hoursToDate(s.start, now);
+        const to   = hoursToDate(s.end, now);
+        if(now >= from && now <= to) current = s;
+        if(from > now && !next) next = s;
       });
 
-      out.innerHTML='';
-      const card=document.createElement('div'); card.className='card';
-      const st=document.createElement('div');
-      st.className='status '+(current?'off':'on');
-      st.textContent=current?'⚡ Отключение сейчас':'💡 Свет есть';
+      title.textContent = `${city} — группа ${group.replace('group_','')}`;
+      out.innerHTML = '';
+
+      /* --- status --- */
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const st = document.createElement('div');
+      st.className = 'status ' + (current ? 'off' : 'on');
+      st.textContent = current
+        ? '⚡ Возможное отключение сейчас'
+        : '💡 Свет есть';
       card.appendChild(st);
 
-      const sub=document.createElement('div'); sub.className='sub';
+      const sub = document.createElement('div');
+      sub.className = 'sub';
+
       if(current){
-        const m=Math.floor((parseTime(current.end,now)-now)/60000);
-        sub.textContent='До включения: '+m+' мин';
+        const mins = Math.max(
+          0,
+          Math.floor((hoursToDate(current.end, now) - now)/60000)
+        );
+        sub.textContent = `До включения: ${mins} мин`;
       } else if(next){
-        const m=Math.floor((parseTime(next.start,now)-now)/60000);
+        const mins = Math.max(
+          0,
+          Math.floor((hoursToDate(next.start, now) - now)/60000)
+        );
         sub.classList.add('warn');
-        sub.textContent='До отключения: '+m+' мин';
-      } else sub.textContent='Отключений больше нет';
+        sub.textContent = `До отключения: ${mins} мин`;
+      } else {
+        sub.textContent = 'Отключений сегодня не ожидается';
+      }
+
       card.appendChild(sub);
       out.appendChild(card);
 
-      const dayCard=document.createElement('div'); dayCard.className='card';
-      const dt=document.createElement('div'); dt.className='day-title'; dt.textContent='Сегодня';
+      /* --- today list --- */
+      const dayCard = document.createElement('div');
+      dayCard.className = 'card';
+
+      const dt = document.createElement('div');
+      dt.className = 'day-title';
+      dt.textContent = 'Сегодня';
       dayCard.appendChild(dt);
-      const list=document.createElement('div'); list.className='slots';
-      slots.forEach(s=>{
-        const d=document.createElement('div'); d.className='slot';
-        d.textContent=s.start+' — '+s.end;
-        if(current===s) d.classList.add('current');
-        if(next===s) d.classList.add('next');
+
+      const list = document.createElement('div');
+      list.className = 'slots';
+
+      todaySlots.forEach(s=>{
+        const d = document.createElement('div');
+        d.className = 'slot';
+        d.textContent = `${fmt(s.start)} — ${fmt(s.end)}`;
+        if(current === s) d.classList.add('current');
+        if(next === s) d.classList.add('next');
         list.appendChild(d);
       });
+
       dayCard.appendChild(list);
       out.appendChild(dayCard);
     }
 
     render();
-    citySel.onchange=()=>{city=citySel.value; store('city',city); render();};
-    groupSel.onchange=()=>{group=groupSel.value; store('group',group); render();};
-    setInterval(render,5*60*1000);
-  }catch(e){ out.innerHTML='<div class="error">Ошибка загрузки данных</div>'; }
+    citySel.onchange  = ()=>{ city  = citySel.value;  store('city',city);  render(); };
+    groupSel.onchange = ()=>{ group = groupSel.value; store('group',group); render(); };
+    setInterval(render, 5*60*1000);
+
+  }catch(e){
+    out.innerHTML = '<div class="error">Ошибка загрузки данных</div>';
+  }
 })();
 
+/* ===== THEME ===== */
 const savedTheme = load('theme');
-if(savedTheme==='light') document.body.classList.add('light');
+if(savedTheme === 'light') document.body.classList.add('light');
 
-themeBtn.onclick=()=>{
+themeBtn.onclick = ()=>{
   document.body.classList.toggle('light');
-  store('theme',document.body.classList.contains('light')?'light':'dark');
+  store(
+    'theme',
+    document.body.classList.contains('light') ? 'light' : 'dark'
+  );
 };
 </script>
 
+
 </body>
 </html>
+
 
 
