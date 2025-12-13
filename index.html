@@ -156,10 +156,21 @@
     const DEFAULT_CITY = 'kiev';
     const DEFAULT_GROUP = 'group_2.2';
 
-    function toTime(v) {
-      const h = Math.floor(v);
-      const m = (v % 1) ? '30' : '00';
-      return `${String(h).padStart(2, '0')}:${m}`;
+    // ===== helpers for dailySchedule =====
+    function toTimeFromString(str) {
+      return str;
+    }
+
+    function parseTime(str, baseDate) {
+      const [h, m] = str.split(':').map(Number);
+      const d = new Date(baseDate);
+      d.setHours(h, m, 0, 0);
+      return d;
+    }
+
+    function formatHM(date) {
+      return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+    }:${m}`;
     }
 
     function kyivNow() {
@@ -237,77 +248,67 @@
 
         function render(groupKey) {
           const now = kyivNow();
-          const todayIndex = (now.getDay() + 6) % 7;
-          const tomorrowIndex = (todayIndex + 1) % 7;
 
-          // фактические данные по группе
+          // ===== DAILY SCHEDULE (REAL DATA) =====
           const groupDaily = cityDaily?.groups?.[groupKey];
-          const groupData = cityData[groupKey];
+          const groupPlan = cityData[groupKey];
+
           document.getElementById('title').textContent = `${cityKey.charAt(0).toUpperCase() + cityKey.slice(1)} — группа ${groupKey.replace('group_', '')}`;
 
-          // today / tomorrow: фактические интервалы имеют приоритет
-          // today / tomorrow: фактические интервалы имеют приоритет
-          const todaySlotsRaw = groupDaily?.today || groupData[todayIndex] || [];
-          const tomorrowSlotsRaw = groupDaily?.tomorrow || groupData[tomorrowIndex] || [];
+          function getDailyIntervals(dateObj) {
+            if (!groupDaily?.days) return [];
+            const dateStr = dateObj.toISOString().slice(0,10);
+            const day = groupDaily.days.find(d => d.date === dateStr);
+            return day?.intervals || [];
+          }
 
-          // ⛔ учитываем ТОЛЬКО реальные отключения (DEFINITE_OUTAGE)
-          const todaySlots = todaySlotsRaw.filter(s => s.type === 'DEFINITE_OUTAGE');
-          const tomorrowSlots = tomorrowSlotsRaw.filter(s => s.type === 'DEFINITE_OUTAGE');
+          const todayRaw = getDailyIntervals(now);
+          const tomorrow = new Date(now.getTime() + 86400000);
+          const tomorrowRaw = getDailyIntervals(tomorrow);
+
+          const todayOutages = todayRaw.filter(s => s.type === 'DEFINITE_OUTAGE');
 
           let isNowOff = false;
           let nextSlot = null;
+          let currentSlot = null;
 
-          todaySlots.forEach(s => {
-            const from = new Date(now);
-            from.setHours(Math.floor(s.start), s.start % 1 ? 30 : 0, 0, 0);
-            const to = new Date(now);
-            to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
+          todayOutages.forEach(s => {
+            const from = parseTime(s.start, now);
+            const to = parseTime(s.end, now);
 
-            if (now >= from && now <= to) isNowOff = true;
+            if (now >= from && now <= to) {
+              isNowOff = true;
+              currentSlot = s;
+            }
             if (from > now && !nextSlot) nextSlot = s;
           });
 
           output.innerHTML = '';
 
+          // ===== STATUS CARD =====
           const cardStatus = document.createElement('div');
           cardStatus.className = 'card';
 
           const status = document.createElement('div');
           status.className = 'status ' + (isNowOff ? 'off' : 'on');
-          status.textContent = isNowOff
-            ? '⚡ Отключение сейчас'
-            : '💡 Свет есть';
+          status.textContent = isNowOff ? '⚡ Отключение сейчас' : '💡 Свет есть';
 
           const sub = document.createElement('div');
           sub.className = 'sub';
 
-          if (isNowOff) {
-            // счётчик до включения
-            const current = todaySlots.find(s => {
-              const from = new Date(now);
-              from.setHours(Math.floor(s.start), s.start % 1 ? 30 : 0, 0, 0);
-              const to = new Date(now);
-              to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
-              return now >= from && now <= to;
-            });
-
-            if (current) {
-              const to = new Date(now);
-              to.setHours(Math.floor(current.end), current.end % 1 ? 30 : 0, 0, 0);
-              const diffMin = Math.max(0, Math.floor((to - now) / 60000));
-              const h = Math.floor(diffMin / 60);
-              const m = diffMin % 60;
-              sub.textContent = `До включения: ${h > 0 ? h + ' ч ' : ''}${m} мин`;
-            }
+          if (isNowOff && currentSlot) {
+            const to = parseTime(currentSlot.end, now);
+            const diffMin = Math.max(0, Math.floor((to - now) / 60000));
+            const h = Math.floor(diffMin / 60);
+            const m = diffMin % 60;
+            sub.textContent = `До включения: ${h > 0 ? h + ' ч ' : ''}${m} мин`;
           } else if (nextSlot) {
-            // счётчик до отключения
-            const from = new Date(now);
-            from.setHours(Math.floor(nextSlot.start), nextSlot.start % 1 ? 30 : 0, 0, 0);
+            const from = parseTime(nextSlot.start, now);
             const diffMin = Math.max(0, Math.floor((from - now) / 60000));
             const h = Math.floor(diffMin / 60);
             const m = diffMin % 60;
             sub.classList.add('warn');
-            sub.textContent = `До отключения: ${h > 0 ? h + ' ч ' : ''}${m} мин (${toTime(nextSlot.start)} — ${toTime(nextSlot.end)})`;
+            sub.textContent = `До отключения: ${h > 0 ? h + ' ч ' : ''}${m} мин (${nextSlot.start} — ${nextSlot.end})`;
           } else {
             sub.textContent = 'Отключений больше не ожидается сегодня';
           }
@@ -316,7 +317,8 @@
           cardStatus.appendChild(sub);
           output.appendChild(cardStatus);
 
-          function renderDay(title, slots, highlightToday) {
+          // ===== DAYS RENDER =====
+          function renderDay(title, slots, highlightToday, baseDate) {
             const card = document.createElement('div');
             card.className = 'card day';
 
@@ -328,7 +330,7 @@
             const list = document.createElement('div');
             list.className = 'slots';
 
-            if (slots.length === 0) {
+            if (!slots.length) {
               const empty = document.createElement('div');
               empty.className = 'slot';
               empty.textContent = 'Нет отключений';
@@ -338,17 +340,13 @@
             slots.forEach(s => {
               const div = document.createElement('div');
               div.className = 'slot';
-              div.textContent = `${toTime(s.start)} — ${toTime(s.end)}`;
+              div.textContent = `${s.start} — ${s.end}`;
 
-              const from = new Date(now);
-              from.setHours(Math.floor(s.start), s.start % 1 ? 30 : 0, 0, 0);
-              const to = new Date(now);
-              to.setHours(Math.floor(s.end), s.end % 1 ? 30 : 0, 0, 0);
-
-              if (highlightToday && s.type === 'DEFINITE_OUTAGE' && now >= from && now <= to) {
-                div.classList.add('current');
-              } else if (highlightToday && nextSlot === s) {
-                div.classList.add('next');
+              if (highlightToday && s.type === 'DEFINITE_OUTAGE') {
+                const from = parseTime(s.start, baseDate);
+                const to = parseTime(s.end, baseDate);
+                if (now >= from && now <= to) div.classList.add('current');
+                else if (nextSlot === s) div.classList.add('next');
               }
 
               list.appendChild(div);
@@ -358,21 +356,9 @@
             output.appendChild(card);
           }
 
-          renderDay('Сегодня', todaySlotsRaw, true);
-          renderDay('Завтра', tomorrowSlotsRaw, false);
-
-          const week = document.createElement('div');
-          week.className = 'card week';
-          week.innerHTML = '<div class="day-title">Неделя</div>';
-
-          groupData.forEach((day, i) => {
-            const wd = document.createElement('div');
-            wd.className = 'slot';
-            wd.textContent = `День ${i + 1}: ` + (day.length ? day.map(s => `${toTime(s.start)}–${toTime(s.end)}`).join(', ') : 'нет отключений');
-            week.appendChild(wd);
-          });
-
-          output.appendChild(week);
+          renderDay('Сегодня', todayRaw, true, now);
+          renderDay('Завтра', tomorrowRaw, false, tomorrow);
+        }
         }
 
         const initialGroup = load(STORAGE_KEYS.group) || DEFAULT_GROUP;
