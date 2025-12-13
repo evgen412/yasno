@@ -1,260 +1,679 @@
 <!DOCTYPE html>
-
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Отключения света — YASNO</title>
-  <style>
-    :root {
-      --bg: #000000;
-      --card: #1c1c1e;
-      --primary: #0a84ff;
-      --ok: #30d158;
-      --warn: #ff453a;
-      --muted: #8e8e93;
-      --border: #2c2c2e;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Изменили заголовок вкладки -->
+    <title>График отключений</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --primary: #0a84ff;
+            --ok: #30d158;
+            --warn: #ff453a;
+            --muted: #8e8e93;
+            --border: #38383a;
+            --debug-bg: #111;
+        }
 
-```
-body.light {
-  --bg: #f2f2f7;
-  --card: #ffffff;
-  --primary: #0a84ff;
-  --ok: #34c759;
-  --warn: #ff3b30;
-  --muted: #6c6c70;
-  --border: #d1d1d6;
-}
+        body.light {
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --primary: #0a84ff;
+            --ok: #34c759;
+            --warn: #ff3b30;
+            --muted: #6c6c70;
+            --border: #d1d1d6;
+            --debug-bg: #fff;
+        }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif;
-  background: var(--bg);
-  color: #f2f2f7;
-  padding: 16px;
-  max-width: 720px;
-  margin: 0 auto;
-  font-size: 17px;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif;
+            background: var(--bg);
+            color: #f2f2f7;
+            padding: 16px;
+            max-width: 720px;
+            margin: 0 auto;
+            font-size: 17px;
+        }
 
-body.light { color: #1c1c1e; }
+        body.light { color: #1c1c1e; }
 
-h1 { font-size: 1.5rem; margin: 6px 0 14px; }
+        h1 { font-size: 1.5rem; margin: 6px 0 14px; }
 
-.controls { margin-bottom: 14px; }
-select, button {
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: inherit;
-  font-size: 1rem;
-}
+        .controls { margin-bottom: 14px; }
+        select, button {
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: inherit;
+            font-size: 1rem;
+            -webkit-appearance: none;
+        }
 
-button { cursor: pointer; }
+        button { cursor: pointer; }
 
-.card {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
-}
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
 
-.status { font-size: 1.15rem; font-weight: 600; }
-.status.on { color: var(--ok); }
-.status.off { color: var(--warn); }
+        .status { font-size: 1.15rem; font-weight: 600; }
+        .status.on { color: var(--ok); }
+        .status.off { color: var(--warn); }
+        .status.unknown { color: var(--muted); }
 
-.sub { margin-top: 6px; color: var(--muted); }
-.sub.warn { color: var(--warn); font-weight: 600; }
+        .sub { margin-top: 6px; color: var(--muted); }
+        .sub.warn { color: var(--warn); font-weight: 600; }
+        
+        /* Новый стиль таймера */
+        .timer-container {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+        .timer-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .timer-value {
+            font-size: 2.5rem;
+            line-height: 1;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .timer-red { color: var(--warn); }
+        .timer-green { color: var(--ok); }
 
-.day-title { font-weight: 600; margin-bottom: 8px; }
+        .day-title { font-weight: 600; margin-bottom: 8px; }
 
-.slots { display: grid; gap: 6px; }
-.slot {
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card);
-}
-.slot.current {
-  border-left: 4px solid var(--warn);
-  background: rgba(255,69,58,0.18);
-  font-weight: 600;
-}
-.slot.next {
-  border-left: 4px solid var(--primary);
-  background: rgba(10,132,255,0.15);
-}
+        .slots { display: grid; gap: 6px; }
+        .slot {
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .slot.type-electricity { border-left: 4px solid var(--ok); background: rgba(48, 209, 88, 0.1); }
+        .slot.type-possible { border-left: 4px solid var(--muted); background: rgba(142,142,147, 0.1); }
+        .slot.type-definite { border-left: 4px solid var(--warn); background: rgba(255,69,58,0.15); }
+        .slot.is-now { border: 2px solid var(--primary); font-weight: 600; }
 
-.error { color: var(--warn); font-weight: 600; }
-```
+        .schedule-type {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .type-actual { color: var(--warn); background: rgba(255,69,58,0.1); }
+        .type-planned { color: var(--primary); background: rgba(10,132,255,0.1); }
 
-  </style>
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .hidden { display: none; }
+        
+        /* Скрываем лог для продакшена, но оставляем стили на случай отладки */
+        #debugConsole {
+            display: none; 
+            margin-top: 30px;
+            padding: 10px;
+            background: var(--debug-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--muted);
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+        .log-error { color: var(--warn); }
+        .log-success { color: var(--ok); }
+        .log-data { color: var(--primary); }
+    </style>
 </head>
 <body>
-  <h1 id="title">Загрузка…</h1>
 
-  <div class="controls">
-    Город: <select id="city"></select>
-    Группа: <select id="group"></select>
-    <button id="theme">🌙</button>
-  </div>
+    <div class="header-row">
+        <h1>График Отключений</h1>
+        <div class="controls" style="margin:0;">
+            <button id="themeToggle">Светлая тема</button>
+        </div>
+    </div>
 
-  <div id="out">Загрузка…</div>
+    <div class="controls" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <select id="citySelect" style="flex: 1;">
+            <option value="" disabled selected>Загрузка городов...</option>
+        </select>
+        
+        <select id="groupSelect" style="flex: 1;" disabled>
+            <option value="" disabled selected>Город не выбран</option>
+        </select>
+    </div>
 
-<script>
-// ⚠️ corsproxy.io часто блокирует GitHub Pages
-// используем стабильный публичный прокси
-// allorigins требует URLENCODED url
-// Cloudflare Worker
-const API = 'https://yasno-proxy.uzgen140.workers.dev';
-const DEF_CITY = 'kiev';
-const DEF_GROUP = 'group_2.2';
+    <div id="content" class="hidden">
+        <div class="card" id="statusCard">
+            <div class="status on" id="statusTitle">Статус неизвестен</div>
+            <div class="sub" id="statusSub">Выберите группу для отображения</div>
+            
+            <!-- Единый счетчик -->
+            <div class="timer-container hidden" id="timerContainer">
+                <div id="timerLabel" class="timer-label">...</div>
+                <div id="timerValue" class="timer-value">--:--</div>
+            </div>
+        </div>
 
-const store = (k,v)=>{ try{localStorage.setItem(k,v)}catch{} };
-const load = k=>{ try{return localStorage.getItem(k)}catch{return null} };
+        <div class="card">
+            <div id="scheduleTypeBadge" class="schedule-type type-planned">Плановый график</div>
+            <div class="day-title" id="scheduleDate">Сегодня</div>
+            <div class="slots" id="slotsContainer"></div>
+        </div>
+    </div>
 
-const citySel = document.getElementById('city');
-const groupSel = document.getElementById('group');
-const out = document.getElementById('out');
-const title = document.getElementById('title');
-const themeBtn = document.getElementById('theme');
+    <div id="placeholder" class="card" style="text-align: center; color: var(--muted);">
+        Выберите город и группу, чтобы увидеть график
+    </div>
 
-function kyivNow(){
-  return new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Kyiv'}));
-}
+    <div id="debugConsole">Лог загрузки данных:</div>
 
-function hoursToDate(v, base){
-  const h = Math.floor(v);
-  const m = Math.round((v - h) * 60);
-  const d = new Date(base);
-  d.setHours(h, m, 0, 0);
-  return d;
-}
+    <script>
+        const btn = document.getElementById('themeToggle');
+        
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light');
+            btn.textContent = 'Темная тема';
+        }
 
-function fmt(v){
-  const h = String(Math.floor(v)).padStart(2,'0');
-  const m = v % 1 ? '30' : '00';
-  return `${h}:${m}`;
-}
-
-(async function init(){
-  try{
-    const res = await fetch(API);
-    if (!res.ok) throw new Error('network');
-    const text = await res.text();
-    const json = JSON.parse(text);
-    const comp = json.components?.find(c=>c.template_name==='electricity-outages-daily-schedule');
-    if(!comp) throw new Error('component not found');
-
-    // Пытаемся взять ФАКТИЧЕСКИЙ график (dailySchedule)
-    // ⚠️ dailySchedule приходит ТОЛЬКО когда бекенд смог определить адрес
-    // если его нет — честно делаем fallback на schedule
-
-    let daily = null;
-    if(comp.dailySchedule){
-      daily = typeof comp.dailySchedule === 'string'
-        ? JSON.parse(comp.dailySchedule)
-        : comp.dailySchedule;
-    }
-
-    let city = load('city') || DEF_CITY;
-    let group = load('group') || DEF_GROUP;
-
-    Object.keys(daily || comp.schedule || {}).forEach(c=>{
-      const o=document.createElement('option');
-      o.value=c; o.textContent=c;
-      if(c===city) o.selected=true;
-      citySel.appendChild(o);
-    });
-
-    function render(){
-      groupSel.innerHTML='';
-      const now = kyivNow();
-      // dailySchedule имеет формат: city → groups → group → [ [today], [tomorrow] ]
-      let slots = [];
-
-      if(daily && daily?.[city]?.groups){
-        Object.keys(daily[city].groups).forEach(g=>{
-          const o=document.createElement('option');
-          o.value=g; o.textContent=g.replace('group_','');
-          if(g===group) o.selected=true;
-          groupSel.appendChild(o);
+        btn.addEventListener('click', () => {
+            document.body.classList.toggle('light');
+            const isLight = document.body.classList.contains('light');
+            btn.textContent = isLight ? 'Темная тема' : 'Светлая тема';
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
         });
-        const gData = daily[city].groups[group];
-        slots = gData?.[0] || [];
-      } else if(comp.schedule?.[city]){
-        Object.keys(comp.schedule[city]).forEach(g=>{
-          const o=document.createElement('option');
-          o.value=g; o.textContent=g.replace('group_','');
-          if(g===group) o.selected=true;
-          groupSel.appendChild(o);
+
+        const API_BASE = 'https://yasno-proxy.uzgen140.workers.dev'; 
+        const DEFAULT_CITY = 'kiev';
+        const DEFAULT_GROUP = 'group_2.2';
+
+        let GLOBAL_DATA = {
+            schedule: {},
+            isActual: {} 
+        };
+
+        const CityNames = {
+            'kiev': 'Киев',
+            'dnipro': 'Днепр',
+            'odesa': 'Одесса',
+            'lviv': 'Львов'
+        };
+
+        function log(msg, type = 'info') {
+            const consoleDiv = document.getElementById('debugConsole');
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            if (type === 'error') line.className = 'log-error';
+            if (type === 'success') line.className = 'log-success';
+            if (type === 'data') line.className = 'log-data';
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(msg); // Оставляем вывод в консоль браузера (F12)
+        }
+
+        function findDeepKey(obj, keyToFind) {
+            if (!obj || typeof obj !== 'object') return null;
+            if (obj[keyToFind]) return obj[keyToFind];
+            if (Array.isArray(obj)) {
+                for (let item of obj) {
+                    const found = findDeepKey(item, keyToFind);
+                    if (found) return found;
+                }
+                return null;
+            }
+            for (let k of Object.keys(obj)) {
+                if (typeof obj[k] === 'object' && obj[k] !== null) {
+                    const found = findDeepKey(obj[k], keyToFind);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        function findCityData(container, cityName) {
+            if (!container) return null;
+            if (container[cityName]) return container[cityName];
+            const key = Object.keys(container).find(k => 
+                k.toLowerCase() === cityName.toLowerCase() || 
+                k.toLowerCase().includes(`-${cityName}`) ||
+                k.toLowerCase().includes(`${cityName}-`)
+            );
+            if (key) return container[key];
+            return null;
+        }
+
+        async function loadCities() {
+            log(`Загрузка городов...`);
+            try {
+                const res = await fetch(`${API_BASE}/cities`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.page && data.page.available_regions) return data.page.available_regions;
+                const schedule = findDeepKey(data, 'schedule');
+                if (schedule) return Object.keys(schedule);
+                return [];
+            } catch (e) {
+                log(`Ошибка загрузки городов: ${e.message}`, 'error');
+                return [];
+            }
+        }
+
+        async function fetchScheduleForCity(city) {
+            log(`Загружаем график для: ${city}...`);
+            const url = `${API_BASE}/groups?city=${city}`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                const dailySchedule = findDeepKey(data, 'dailySchedule');
+                if (dailySchedule) {
+                    const cityData = findCityData(dailySchedule, city);
+                    if (cityData) {
+                        if (cityData.groups) {
+                            GLOBAL_DATA.schedule[city] = cityData.groups;
+                            GLOBAL_DATA.isActual[city] = true;
+                            log(`Нашел фактический график!`, 'success');
+                            return true;
+                        } 
+                        else if (Object.keys(cityData).some(k => k.startsWith('group'))) {
+                            GLOBAL_DATA.schedule[city] = cityData;
+                            GLOBAL_DATA.isActual[city] = true;
+                            log(`Нашел фактический график!`, 'success');
+                            return true;
+                        }
+                    }
+                }
+
+                const schedule = findDeepKey(data, 'schedule');
+                if (schedule) {
+                    const cityData = findCityData(schedule, city);
+                    if (cityData) {
+                        GLOBAL_DATA.schedule[city] = cityData;
+                        GLOBAL_DATA.isActual[city] = false;
+                        log(`Загружен плановый график`, 'success');
+                        return true;
+                    }
+                }
+                log(`График для города ${city} не найден`, 'error');
+                return false;
+            } catch (e) {
+                log(`Ошибка: ${e.message}`, 'error');
+                return false;
+            }
+        }
+
+        const citySelect = document.getElementById('citySelect');
+        const groupSelect = document.getElementById('groupSelect');
+        const contentDiv = document.getElementById('content');
+        const placeholderDiv = document.getElementById('placeholder');
+        const slotsContainer = document.getElementById('slotsContainer');
+        const badge = document.getElementById('scheduleTypeBadge');
+        
+        const timerContainer = document.getElementById('timerContainer');
+        const timerLabel = document.getElementById('timerLabel');
+        const timerValue = document.getElementById('timerValue');
+
+        async function init() {
+            const cities = await loadCities();
+            citySelect.innerHTML = '<option value="" disabled selected>Выберите город</option>';
+            if (cities && cities.length > 0) {
+                cities.forEach(region => {
+                    const opt = document.createElement('option');
+                    opt.value = region;
+                    opt.textContent = CityNames[region] || region.toUpperCase();
+                    citySelect.appendChild(opt);
+                });
+
+                let targetCity = localStorage.getItem('selectedCity');
+                const savedGroup = localStorage.getItem('selectedGroup');
+                
+                if (!targetCity && cities.includes(DEFAULT_CITY)) targetCity = DEFAULT_CITY;
+
+                if (targetCity && cities.includes(targetCity)) {
+                    citySelect.value = targetCity;
+                    await onCityChange(false);
+                    
+                    let targetGroup = null;
+                    if (savedGroup) {
+                        const hasSaved = Array.from(groupSelect.options).some(opt => opt.value === savedGroup);
+                        if (hasSaved) targetGroup = savedGroup;
+                    }
+                    if (!targetGroup && targetCity === DEFAULT_CITY) {
+                        const hasDefault = Array.from(groupSelect.options).some(opt => opt.value === DEFAULT_GROUP);
+                        if (hasDefault) targetGroup = DEFAULT_GROUP;
+                    }
+
+                    if (targetGroup) {
+                        groupSelect.value = targetGroup;
+                        onGroupChange(); 
+                    }
+                }
+            } else {
+                citySelect.innerHTML = '<option disabled>Ошибка загрузки</option>';
+            }
+        }
+
+        async function onCityChange(resetGroup = true) {
+            const city = citySelect.value;
+            groupSelect.innerHTML = '<option value="" disabled selected>Загрузка...</option>';
+            groupSelect.disabled = true;
+            contentDiv.classList.add('hidden');
+            placeholderDiv.classList.remove('hidden');
+            
+            if (resetGroup) localStorage.removeItem('selectedGroup');
+
+            if (!GLOBAL_DATA.schedule[city]) {
+                const loaded = await fetchScheduleForCity(city);
+                if (!loaded) {
+                    groupSelect.innerHTML = '<option disabled>Ошибка данных</option>';
+                    return;
+                }
+            }
+            populateGroups(city);
+        }
+
+        function onGroupChange() {
+            const city = citySelect.value;
+            const group = groupSelect.value;
+            if (!city || !group) return;
+            
+            const scheduleObj = GLOBAL_DATA.schedule[city];
+            if (!scheduleObj || !scheduleObj[group]) {
+                log(`Нет данных для группы ${group}`, 'error');
+                return;
+            }
+            
+            const rawSchedule = scheduleObj[group];
+            const isActual = GLOBAL_DATA.isActual[city];
+            renderSchedule(rawSchedule, isActual);
+            contentDiv.classList.remove('hidden');
+            placeholderDiv.classList.add('hidden');
+        }
+
+        citySelect.addEventListener('change', () => {
+            localStorage.setItem('selectedCity', citySelect.value);
+            onCityChange(true);
         });
-        const sched = comp.schedule[city][group] || [];
-        slots = sched[0] || [];
-      }
 
-      const outages = slots.filter(s=>
-        s.type === 'DEFINITE_OUTAGE' || s.type === 'POSSIBLE_OUTAGE'
-      );
+        groupSelect.addEventListener('change', () => {
+            localStorage.setItem('selectedGroup', groupSelect.value);
+            onGroupChange();
+        });
 
-      let current=null, next=null;
-      outages.forEach(s=>{
-        const f = hoursToDate(s.start, now);
-        const t = hoursToDate(s.end, now);
-        if(now>=f && now<=t) current=s;
-        if(f>now && !next) next=s;
-      });
+        function populateGroups(city) {
+            const scheduleObj = GLOBAL_DATA.schedule[city];
+            if (!scheduleObj) return;
+            const groupKeys = Object.keys(scheduleObj).sort();
+            const validGroups = groupKeys.filter(k => k.includes('group'));
 
-      out.innerHTML='';
-      const card=document.createElement('div'); card.className='card';
-      const st=document.createElement('div');
-      st.className='status '+(current?'off':'on');
-      st.textContent = current ? '⚡ Отключение сейчас' : '💡 Свет есть';
-      card.appendChild(st);
+            if (validGroups.length === 0) {
+                groupSelect.innerHTML = '<option disabled>Нет групп</option>';
+                return;
+            }
+            groupSelect.innerHTML = '<option value="" disabled selected>Выберите группу</option>';
+            validGroups.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                const cleanName = key.replace('group_', '').replace('.', '.');
+                opt.textContent = `Группа ${cleanName}`;
+                groupSelect.appendChild(opt);
+            });
+            groupSelect.disabled = false;
+        }
 
-      const sub=document.createElement('div'); sub.className='sub';
-      if(current){
-        const m=Math.floor((hoursToDate(current.end,now)-now)/60000);
-        sub.textContent = 'До включения: ' + m + ' мин';
-      } else if(next){
-        const m=Math.floor((hoursToDate(next.start,now)-now)/60000);
-        sub.classList.add('warn');
-        sub.textContent = 'До отключения: ' + m + ' мин';
-      } else sub.textContent='Отключений больше нет';
-      card.appendChild(sub);
-      out.appendChild(card);
+        // === НОРМАЛИЗАЦИЯ ГРАФИКА ===
+        function normalizeSchedule(rawSlots) {
+            if (!rawSlots || !Array.isArray(rawSlots)) return [];
+            
+            const sorted = [...rawSlots].sort((a, b) => a.start - b.start);
+            const fullDay = [];
+            let currentTime = 0;
 
-      const dayCard=document.createElement('div'); dayCard.className='card';
-      const dt=document.createElement('div'); dt.className='day-title'; dt.textContent='Сегодня';
-      dayCard.appendChild(dt);
-      const list=document.createElement('div'); list.className='slots';
-      slots.forEach(s=>{
-        const d=document.createElement('div'); d.className='slot';
-        d.textContent = `${fmt(s.start)} — ${fmt(s.end)}`;
-        if(current===s) d.classList.add('current');
-        if(next===s) d.classList.add('next');
-        list.appendChild(d);
-      });
-      dayCard.appendChild(list);
-      out.appendChild(dayCard);
-    }
+            for (const slot of sorted) {
+                const start = parseFloat(slot.start);
+                const end = parseFloat(slot.end);
 
-    render();
-    citySel.onchange=()=>{city=citySel.value; store('city',city); render();};
-    groupSel.onchange=()=>{group=groupSel.value; store('group',group); render();};
-    setInterval(render,5*60*1000);
-  }catch(e){ out.innerHTML='<div class="error">Ошибка загрузки данных</div>'; }
-})();
+                if (start > currentTime) {
+                    fullDay.push({
+                        start: currentTime,
+                        end: start,
+                        type: 'ELECTRICITY'
+                    });
+                }
+                
+                fullDay.push({
+                    start: start,
+                    end: end,
+                    type: slot.type
+                });
+                
+                currentTime = end;
+            }
 
-const savedTheme = load('theme');
-if(savedTheme==='light') document.body.classList.add('light');
+            if (currentTime < 24) {
+                fullDay.push({
+                    start: currentTime,
+                    end: 24,
+                    type: 'ELECTRICITY'
+                });
+            }
 
-themeBtn.onclick=()=>{
-  document.body.classList.toggle('light');
-  store('theme',document.body.classList.contains('light')?'light':'dark');
-};
-</script>
+            return fullDay;
+        }
 
+        function renderSchedule(rawSchedule, isActual) {
+            const today = new Date();
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('scheduleDate').textContent = today.toLocaleDateString('ru-RU', options);
+            slotsContainer.innerHTML = '';
+
+            if (isActual) {
+                badge.textContent = "Фактический график (Точный)";
+                badge.className = "schedule-type type-actual";
+            } else {
+                badge.textContent = "Плановый график (Возможный)";
+                badge.className = "schedule-type type-planned";
+            }
+
+            if (!rawSchedule || !Array.isArray(rawSchedule) || rawSchedule.length === 0) {
+                slotsContainer.innerHTML = '<div class="sub">Нет данных</div>';
+                updateStatusHeader(null);
+                timerContainer.classList.add('hidden');
+                return;
+            }
+
+            let dayRaw = [];
+            let tomorrowRaw = [];
+            
+            if (isActual || rawSchedule.length <= 3) {
+                dayRaw = rawSchedule[0];
+                if (rawSchedule.length > 1) tomorrowRaw = rawSchedule[1];
+            } else {
+                const jsDay = today.getDay(); 
+                const arrayIndex = (jsDay === 0) ? 6 : jsDay - 1;
+                const nextIndex = (arrayIndex + 1) % 7;
+                dayRaw = rawSchedule[arrayIndex];
+                tomorrowRaw = rawSchedule[nextIndex];
+            }
+
+            // !!! ВАЖНО: Нормализуем графики (заполняем пробелы)
+            const daySchedule = normalizeSchedule(dayRaw);
+            const tomorrowSchedule = normalizeSchedule(tomorrowRaw);
+
+            const currentHour = today.getHours() + today.getMinutes() / 60;
+
+            if (daySchedule.length === 0) {
+                slotsContainer.innerHTML = '<div class="sub">Данных на сегодня нет</div>';
+                updateStatusHeader(null);
+                timerContainer.classList.add('hidden');
+                return;
+            }
+
+            updateStatusHeader(daySchedule, currentHour);
+            updateCountdown(daySchedule, tomorrowSchedule, currentHour);
+
+            daySchedule.forEach(slot => {
+                const div = document.createElement('div');
+                let className = 'slot';
+                let typeText = '';
+                
+                if (slot.type === 'DEFINITE_OUTAGE') {
+                    className += ' type-definite';
+                    typeText = 'Отключение (Факт)';
+                } else if (slot.type === 'POSSIBLE_OUTAGE') {
+                    className += ' type-possible';
+                    typeText = 'Возможно отключение';
+                } else {
+                    className += ' type-electricity';
+                    typeText = 'Свет есть';
+                }
+
+                if (currentHour >= slot.start && currentHour < slot.end) {
+                    className += ' is-now';
+                }
+
+                div.className = className;
+                div.innerHTML = `
+                    <span style="font-weight:600;">${formatTime(slot.start)} - ${formatTime(slot.end)}</span>
+                    <span style="font-size: 0.9em; opacity: 0.8;">${typeText}</span>
+                `;
+                slotsContainer.appendChild(div);
+            });
+        }
+
+        // === ОБНОВЛЕННАЯ ЛОГИКА ТАЙМЕРА (ЕДИНЫЙ СЧЕТЧИК) ===
+        function updateCountdown(todaySlots, tomorrowSlots, currentHour) {
+            timerContainer.classList.remove('hidden');
+            const currentSlot = todaySlots.find(s => currentHour >= s.start && currentHour < s.end);
+            
+            if (!currentSlot) {
+                timerValue.textContent = "--:--";
+                return;
+            }
+
+            const type = currentSlot.type;
+            
+            const findNext = (conditionFn) => {
+                let next = todaySlots.find(s => s.start > currentHour && conditionFn(s));
+                if (next) return next.start - currentHour;
+                if (tomorrowSlots && tomorrowSlots.length > 0) {
+                    next = tomorrowSlots.find(s => conditionFn(s));
+                    if (next) return (24 - currentHour) + next.start;
+                }
+                return null;
+            };
+
+            // 1. Свет ЕСТЬ (Белая) -> Ищем любое "Не светло" (Серую или Красную)
+            if (type === 'ELECTRICITY') {
+                const diff = findNext(s => s.type !== 'ELECTRICITY');
+                
+                timerLabel.textContent = "Свет выключат через";
+                if (diff !== null) {
+                    timerValue.textContent = formatDuration(diff);
+                } else {
+                    timerValue.textContent = "По графику нет";
+                }
+                timerValue.className = "timer-value timer-red";
+            }
+            // 2. Отключение (Красная или Серая) -> Ищем "Свет есть" (Белая)
+            else {
+                const diff = findNext(s => s.type === 'ELECTRICITY');
+                
+                timerLabel.textContent = "Свет включат через"; 
+                
+                if (diff !== null) {
+                    timerValue.textContent = formatDuration(diff);
+                } else {
+                    const endDiff = currentSlot.end - currentHour;
+                    timerValue.textContent = formatDuration(endDiff); 
+                }
+                timerValue.className = "timer-value timer-green";
+            }
+        }
+
+        function formatDuration(hoursVal) {
+            if (hoursVal === null || hoursVal < 0 || isNaN(hoursVal)) return "--:--";
+            const totalMinutes = Math.round(hoursVal * 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            return `${h}ч ${m.toString().padStart(2, '0')}м`;
+        }
+
+        function updateStatusHeader(slots, currentHour) {
+            const title = document.getElementById('statusTitle');
+            const sub = document.getElementById('statusSub');
+            if (!slots) {
+                title.textContent = 'Нет данных';
+                title.className = 'status unknown';
+                sub.textContent = '-';
+                return;
+            }
+            const currentSlot = slots.find(s => currentHour >= s.start && currentHour < s.end);
+            
+            if (!currentSlot) {
+                title.textContent = 'Свет есть';
+                title.className = 'status on';
+                sub.textContent = 'Нет активных отключений';
+                return;
+            }
+
+            if (currentSlot.type === 'DEFINITE_OUTAGE') {
+                title.textContent = 'Света нет';
+                title.className = 'status off';
+                sub.textContent = 'Действует фактическое отключение';
+            } else if (currentSlot.type === 'POSSIBLE_OUTAGE') {
+                title.textContent = 'Возможно отключение';
+                title.className = 'status unknown'; 
+                title.style.color = 'var(--muted)';
+                sub.textContent = 'Серая зона';
+            } else {
+                title.textContent = 'Свет есть';
+                title.className = 'status on';
+                title.style.color = '';
+                sub.textContent = 'По графику свет есть';
+            }
+        }
+
+        function formatTime(val) {
+            const h = Math.floor(val);
+            const m = (val - h) * 60;
+            const hStr = h.toString().padStart(2, '0');
+            const mStr = Math.round(m).toString().padStart(2, '0');
+            return `${hStr}:${mStr}`;
+        }
+
+        init();
+    </script>
 </body>
 </html>
