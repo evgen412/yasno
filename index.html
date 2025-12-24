@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>График отключений</title>
-    <!-- Добавлен фавикон (лампочка) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💡</text></svg>">
     <style>
         :root {
@@ -71,7 +70,7 @@
         .sub { margin-top: 6px; color: var(--muted); }
         .sub.warn { color: var(--warn); font-weight: 600; }
         
-        /* Новый стиль таймера */
+        /* Стиль таймера */
         .timer-container {
             text-align: center;
             margin-top: 15px;
@@ -676,7 +675,7 @@
                 return null;
             };
 
-            // 1. Свет ЕСТЬ (Белая) -> Ищем любое "Не светло" (Серую или Красную)
+            // 1. Свет ЕСТЬ -> Ищем отключение. Таймер ЗЕЛЕНЫЙ (все хорошо)
             if (type === 'ELECTRICITY') {
                 const diff = findNext(s => s.type !== 'ELECTRICITY');
                 
@@ -686,9 +685,9 @@
                 } else {
                     timerValue.textContent = "По графику нет";
                 }
-                timerValue.className = "timer-value timer-red";
+                timerValue.className = "timer-value timer-green";
             }
-            // 2. Отключение (Красная или Серая) -> Ищем "Свет есть" (Белая)
+            // 2. Отключение -> Ищем свет. Таймер КРАСНЫЙ (внимание)
             else {
                 const diff = findNext(s => s.type === 'ELECTRICITY');
                 
@@ -700,7 +699,7 @@
                     const endDiff = currentSlot.end - currentHour;
                     timerValue.textContent = formatDuration(endDiff); 
                 }
-                timerValue.className = "timer-value timer-green";
+                timerValue.className = "timer-value timer-red";
             }
         }
 
